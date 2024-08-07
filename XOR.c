@@ -86,8 +86,8 @@ sample xor[] = {
 sample *train = xor;
 
 float forward(model m,float x1,float x2){
-	float val1 = x1*m.per1_w1 + x2*m.per1_w2 + m.per1_b;
-	float val2 = x1*m.per2_w1 + x2*m.per2_w2 + m.per2_b;
+	float val1 = sigmoidf(x1*m.per1_w1 + x2*m.per1_w2 + m.per1_b);
+	float val2 = sigmoidf(x1*m.per2_w1 + x2*m.per2_w2 + m.per2_b);
 	float y = sigmoidf(val1*m.per3_w1 + val2*m.per3_w2 + m.per3_b);
 	return y;
 }
@@ -183,7 +183,7 @@ void check(model m){
 int main(void){
 	model m = get_model();
 	print_model(m);
-	for(int i = 0 ; i < 100000 ; i++){
+	for(int i = 0 ; i < 1000000 ; i++){
 		training(&m);
 		//printf("cst : %f\n",cost(m));
 	}
