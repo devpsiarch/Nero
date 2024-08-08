@@ -10,19 +10,21 @@
 typedef struct {
 	size_t rows;
 	size_t cols;
+	size_t stride;
 	float *ptr;
 	//stride later for sub matrices
 }Mat;
 
-#define Mat_at(m,r,c) (m).ptr[(r)*(m).cols+(c)]
+#define Mat_at(m,r,c) (m).ptr[(r)*(m).stride+(c)]
 #define Mat_free(m) free((m).ptr)
 #define Mat_SHOW(m) Mat_print((m),#m)
 
 Mat Mat_alloc(size_t rows,size_t cols);
+Mat Mat_cut(float data[],size_t rows,size_t cols,size_t stride,size_t offset);
 void Mat_rand(Mat m,float max,float low);
-
 void Mat_print(Mat m,const char *name);
-
+Mat Mat_row(Mat m,size_t row);
+void Mat_copy(Mat dst,Mat src);
 void Mat_dot(Mat dst,Mat a,Mat b);
 void Mat_add(Mat dst,Mat a,Mat b);
 void Mat_sub(Mat dst,Mat a,Mat b);
@@ -44,22 +46,30 @@ Mat Mat_alloc(size_t rows,size_t cols){
 	Mat matrix;
 	matrix.rows = rows;
 	matrix.cols = cols;
+	matrix.stride = cols;
 	matrix.ptr = malloc(sizeof(*matrix.ptr)*rows*cols);
 	assert(matrix.ptr != NULL);
 	return matrix;
 }
 
-
+Mat Mat_cut(float data[],size_t rows,size_t cols,size_t stride,size_t offset){
+    return (Mat) {
+        .rows = rows,
+        .cols = cols,
+        .stride = stride,
+        .ptr = data + offset,
+    };
+}
 
 void Mat_print(Mat m,const char *name){
 	printf("%s [\n",name);
 	for(size_t i = 0 ; i < m.rows ; i++){
 		for(size_t j = 0 ; j < m.cols ; j++){
-			printf("%f ",Mat_at(m,i,j));
+			printf("    %f ",Mat_at(m,i,j));
 		}
 		printf("\n");
 	}
-	printf("\n]");
+	printf("]\n");
 }
 
 void Mat_dot(Mat dst,Mat a,Mat b){
@@ -76,6 +86,23 @@ void Mat_dot(Mat dst,Mat a,Mat b){
 	}
 }
 
+Mat Mat_row(Mat m,size_t row){
+	return (Mat){
+	.rows = 1,
+	.cols = m.cols,
+	.stride = m.stride,
+	.ptr = &Mat_at(m,row,0),
+	};
+}
+void Mat_copy(Mat dst,Mat src){
+	assert(dst.rows == src.rows);
+	assert(dst.cols == src.cols);
+	for(size_t i = 0 ;i < dst.rows ; i++){
+		for(size_t j = 0 ; j < dst.cols;j++){
+			Mat_at(dst,i,j) = Mat_at(src,i,j);
+		}
+	}	
+}
 
 void Mat_add(Mat dst,Mat a,Mat b){
 	//assertion of sizes
