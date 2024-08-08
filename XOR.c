@@ -82,7 +82,12 @@ sample xor[] = {
 	{0,1,1},
 	{1,1,0},
 };
-
+sample add[] = {
+	{0,0,0},
+	{1,0,1},
+	{0,1,1},
+	{1,1,2},
+};
 sample *train = xor;
 
 float forward(model m,float x1,float x2){
@@ -106,8 +111,8 @@ float cost(model m){
 void training(model *m){
 	//derivatives w/ respect to each parameter
 	float ncost = cost(*m);
-	float rate = 1e-2;
-	float h = 1e-2;
+	float rate = 1e-1;
+	float h = 1e-1;
 	//stores the resent derivation respect
 	float temp,dp;
 	
