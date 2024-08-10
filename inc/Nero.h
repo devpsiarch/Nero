@@ -1,5 +1,6 @@
 //TODO : Mat/NN_Model check status for debuggin 
 //TODO : more activation functions
+//TODO : maybe its a good idea to get the ti and to in the model aswell
 //the header part 
 #ifndef NERO_H
 #define NERO_H
@@ -50,6 +51,9 @@ NN_Model NN_ALLOC(size_t *network,size_t network_size);
 void NN_print(NN_Model model,const char *name);
 void NN_rand(NN_Model model,size_t low,size_t high);
 void NN_feedforward(NN_Model model);
+float NN_cost(NN_Model model,Mat ti,Mat to,size_t data_size);
+void NN_finit_diff(NN_Model model,NN_Model gradient,Mat ti,Mat to,size_t data_size,float eps);
+void NN_gradient_update(NN_Model model,NN_Model gradient,float rate);
 
 Mat Mat_alloc(size_t rows,size_t cols);
 Mat Mat_cut(float data[],size_t rows,size_t cols,size_t stride,size_t offset);
@@ -62,6 +66,8 @@ void Mat_dot(Mat dst,Mat a,Mat b);
 void Mat_add(Mat dst,Mat a,Mat b);
 void Mat_sub(Mat dst,Mat a,Mat b);
 void Mat_sig(Mat dst);
+void Mat_sq(Mat dst);
+float Mat_sum(Mat dst);
 /*=============================*/
       /*Math and rand def*/
 /*=============================*/
@@ -141,6 +147,75 @@ void NN_feedforward(NN_Model model){
 	}
 }
 
+float NN_cost(NN_Model model,Mat ti,Mat to,size_t data_size){
+	//assertions of sizes
+	//its ok to not check rows cuz they will have the same while compairing ...
+	//i think , i might have to check this if it broke 
+	assert(to.cols == NN_OUTPUT(model).cols);
+	float result = 0;
+	//these are the input and the expacted output 
+	Mat x,y;
+	Mat diff = Mat_alloc(to.rows,to.cols);
+	for(size_t i = 0 ; i < data_size ; i++){
+		x  = Mat_row(ti,i);
+		y = Mat_row(to,i);
+	
+		Mat_copy(NN_INPUT(model),x);
+        NN_feedforward(model);
+
+		Mat diff = Mat_alloc(y.rows,y.cols);
+		Mat_sub(diff,y,NN_OUTPUT(model));
+		Mat_sq(diff);
+		result += Mat_sum(diff);	
+	}
+	return (result/data_size);
+}
+
+void NN_finit_diff(NN_Model model,NN_Model gradient,Mat ti,Mat to,size_t data_size,float eps){
+	float saved;
+	float c = NN_cost(model,ti,to,data_size);
+	//finite diff for all weights 
+	for(size_t i = 0 ; i < model.layers ; i++){
+		for(size_t j = 0 ; j < model.wi[i].rows; j++){
+			for(size_t k = 0 ; k < model.wi[i].cols; k++){
+				saved = Mat_at(model.wi[i],j,k);
+				Mat_at(model.wi[i],j,k) += eps;
+				Mat_at(gradient.wi[i],j,k) = (NN_cost(model,ti,to,data_size) - c)/eps;
+				Mat_at(model.wi[i],j,k) = saved;
+			}
+		}	
+	}
+	//finite diff for all biases
+	for(size_t i = 0 ; i < model.layers ; i++){
+		for(size_t j = 0 ; j < model.bi[i].rows; j++){
+			for(size_t k = 0 ; k < model.bi[i].cols; k++){
+				saved = Mat_at(model.bi[i],j,k);
+				Mat_at(model.bi[i],j,k) += eps;
+				Mat_at(gradient.bi[i],j,k) = (NN_cost(model,ti,to,data_size) - c)/eps;
+				Mat_at(model.bi[i],j,k) = saved;
+			}
+		}	
+	}
+}
+
+void NN_gradient_update(NN_Model model,NN_Model gradient,float rate){
+	//updating the weights and biases using gradint decent
+	for(size_t i = 0 ; i < model.layers ; i++){
+		for(size_t j = 0 ; j < model.wi[i].rows; j++){
+			for(size_t k = 0 ; k < model.wi[i].cols; k++){
+				Mat_at(model.wi[i],j,k) -= rate*Mat_at(gradient.wi[i],j,k);
+			}
+		}	
+	}
+
+	for(size_t i = 0 ; i < model.layers ; i++){
+		for(size_t j = 0 ; j < model.bi[i].rows; j++){
+			for(size_t k = 0 ; k < model.bi[i].cols; k++){
+				Mat_at(model.bi[i],j,k) -= rate*Mat_at(gradient.bi[i],j,k);
+			}
+		}	
+	}
+}
 
 Mat Mat_alloc(size_t rows,size_t cols){
 	Mat matrix;
@@ -253,7 +328,23 @@ void Mat_rand(Mat m,float low,float max){
 	}
 }
 
+void Mat_sq(Mat dst){
+	for(size_t i = 0 ; i < dst.rows ; i++){
+		for(size_t j = 0 ; j < dst.cols ; j++){
+			Mat_at(dst,i,j) = Mat_at(dst,i,j)*Mat_at(dst,i,j);
+		}
+	}
+}
 
+float Mat_sum(Mat dst){
+	float result = 0 ; 
+	for(size_t i = 0 ; i < dst.rows ; i++){
+		for(size_t j = 0 ; j < dst.cols ; j++){
+			result += Mat_at(dst,i,j);
+		}
+	}
+	return result;
+}
 
 /*=============================*/
      /*Math and rand impli*/
