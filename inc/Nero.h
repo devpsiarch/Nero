@@ -1,3 +1,5 @@
+//TODO : Mat/NN_Model check status for debuggin 
+//TODO : more activation functions
 //the header part 
 #ifndef NERO_H
 #define NERO_H
@@ -11,7 +13,12 @@
 #define Mat_free(m) free((m).ptr)
 #define Mat_SHOW(m) Mat_print((m),#m,0)
 #define Mat_STAT(m) Mat_print_stat((m),#m)
+
 #define array_len(arr) sizeof((arr))/sizeof((arr[0]))
+
+#define NN_INPUT(model) (model).ai[0]
+#define NN_OUTPUT(model) (model).ai[(model).layers]
+
 
 //colors for beauty 
 #define ANSI_COLOR_RED     "\x1b[31m"
@@ -41,6 +48,9 @@ typedef struct {
 
 NN_Model NN_ALLOC(size_t *network,size_t network_size);
 void NN_print(NN_Model model,const char *name);
+void NN_rand(NN_Model model,size_t low,size_t high);
+void NN_feedforward(NN_Model model);
+
 Mat Mat_alloc(size_t rows,size_t cols);
 Mat Mat_cut(float data[],size_t rows,size_t cols,size_t stride,size_t offset);
 void Mat_rand(Mat m,float max,float low);
@@ -51,6 +61,7 @@ void Mat_copy(Mat dst,Mat src);
 void Mat_dot(Mat dst,Mat a,Mat b);
 void Mat_add(Mat dst,Mat a,Mat b);
 void Mat_sub(Mat dst,Mat a,Mat b);
+void Mat_sig(Mat dst);
 /*=============================*/
       /*Math and rand def*/
 /*=============================*/
@@ -86,7 +97,7 @@ NN_Model NN_ALLOC(size_t *network,size_t network_size){
 	for(size_t i = 1 ; i < network_size ; i++){
 		model.wi[i-1] = Mat_alloc(network[i-1],network[i]);
 		model.bi[i-1] = Mat_alloc(1,network[i]);
-		model.ai[i-1] = Mat_alloc(1,network[i]);
+		model.ai[i] = Mat_alloc(1,network[i]);
 	}
 	return model;
 }
@@ -94,15 +105,40 @@ NN_Model NN_ALLOC(size_t *network,size_t network_size){
 void NN_print(NN_Model model,const char *name){
 	printf(ANSI_COLOR_CYAN"Model %s = {"ANSI_COLOR_RESET"\n",name);
 	char buffer[256];
-	for(size_t i = 0; i < model.layers ; i++){
-		snprintf(buffer,sizeof(buffer),ANSI_COLOR_RED"wi[%zu]"ANSI_COLOR_RESET,i);
-		Mat_print(model.wi[i],buffer,6);
-		snprintf(buffer,sizeof(buffer),ANSI_COLOR_YELLOW"bi[%zu]"ANSI_COLOR_RESET,i);
-		Mat_print(model.bi[i],buffer,6);
-		snprintf(buffer,sizeof(buffer),ANSI_COLOR_GREEN"ai[%zu]"ANSI_COLOR_RESET,i);
-		Mat_print(model.ai[i],buffer,6);
+	size_t buffer_size = sizeof(buffer);
+	size_t i = 0;
+	for(i = 0; i < model.layers ; i++){
+		snprintf(buffer,buffer_size,ANSI_COLOR_RED"wi[%zu]"ANSI_COLOR_RESET,i);
+		Mat_print(model.wi[i],buffer,4);
+		snprintf(buffer,buffer_size,ANSI_COLOR_YELLOW"bi[%zu]"ANSI_COLOR_RESET,i);
+		Mat_print(model.bi[i],buffer,4);
+		if(i==0){
+			snprintf(buffer,buffer_size,ANSI_COLOR_GREEN"INPUT: ai[%zu]"ANSI_COLOR_RESET,i);
+			Mat_print(model.ai[i],buffer,4);
+			continue;
+		}
+		snprintf(buffer,buffer_size,ANSI_COLOR_GREEN"activation[%zu]: ai[%zu]"ANSI_COLOR_RESET,i,i);
+		Mat_print(model.ai[i],buffer,4);
 	}
+	snprintf(buffer,buffer_size,ANSI_COLOR_GREEN"OUTPUT: ai[%zu]"ANSI_COLOR_RESET,i);
+	Mat_print(model.ai[i],buffer,4);
 	printf(ANSI_COLOR_CYAN"}"ANSI_COLOR_RESET"\n");
+}
+
+void NN_rand(NN_Model model,size_t low,size_t high){
+	for(size_t i = 0 ; i < model.layers ; i++){
+		Mat_rand(model.wi[i],low,high);	
+		Mat_rand(model.bi[i],low,high);
+	}
+}
+
+void NN_feedforward(NN_Model model){
+	//ai[i+1] wont overshoot cuz its bigger then the parameters with + 1
+	for(size_t i = 0 ; i < model.layers ; i++){
+		Mat_dot(model.ai[i+1],model.ai[i],model.wi[i]);
+		Mat_add(model.ai[i+1],model.ai[i+1],model.bi[i]);
+		Mat_sig(model.ai[i+1]);
+	}
 }
 
 
@@ -129,8 +165,9 @@ void Mat_print(Mat m,const char *name,size_t padding){
 	printf("%*s ",(int)padding,"");
 	printf("%s[\n",name);
 	for(size_t i = 0 ; i < m.rows ; i++){
+		printf("%*s",(int) padding,"");
 		for(size_t j = 0 ; j < m.cols ; j++){
-			printf("    %*f ",(int)(padding+6),Mat_at(m,i,j));
+			printf("    %f ",Mat_at(m,i,j));
 		}
 		printf("\n");
 	}
@@ -145,8 +182,10 @@ void Mat_print_stat(Mat m,const char *name){
 
 void Mat_dot(Mat dst,Mat a,Mat b){
 	//assertion for correct size
+	//result (a.rows , b.cols)
 	assert(a.cols == b.rows);
-	assert(dst.rows == a.rows && dst.cols == b.cols);
+	assert(dst.rows == a.rows);
+	assert(dst.cols == b.cols);
 	for(size_t i = 0 ; i < a.rows;i++){
 		for(size_t j = 0 ; j < b.cols ;j++){
 			Mat_at(dst,i,j) = 0;
@@ -196,7 +235,15 @@ void Mat_sub(Mat dst,Mat a,Mat b){
 		}
 	}
 }
-	
+
+void Mat_sig(Mat dst){
+	for(size_t i = 0 ; i < dst.rows ; i ++){
+		for(size_t j = 0 ; j < dst.cols ; j ++){
+			Mat_at(dst,i,j) = sigmoidf(Mat_at(dst,i,j));
+		}
+	}
+}
+
 void Mat_rand(Mat m,float low,float max){
 	for(size_t i = 0 ; i < m.rows ; i ++){
 		for(size_t j = 0 ; j < m.cols ; j++){
