@@ -112,10 +112,10 @@ void update(model m,model grad){
 }
 
 float train[] = {
-	0, 0, 0,
-	1, 0, 1,
-	0, 1, 1,
-	1, 1, 0,
+	0, 0, 1,
+	1, 0, 0,
+	0, 1, 0,
+	1, 1, 1,
 };
 
 
@@ -154,7 +154,6 @@ int main(void){
 	Mat_rand(m.w2,0,1);
 	Mat_rand(m.b2,0,1);
 
-	printf("the init model is \n");
 
 	Mat_SHOW(m.w1);
 	Mat_SHOW(m.b1);
@@ -166,16 +165,30 @@ int main(void){
 	Mat_SHOW(to);
 
 
-	printf("the cost of the model %f\n",cost(m,ti,to));
 
 	for(size_t i = 0 ; i < 200000 ; i++){
+
+		
 		finit_diff(m,grad,ti,to);
 		update(m,grad);
-        printf("cost is : %f\n",cost(m,ti,to));
+        //printf("cost is : %f\n",cost(m,ti,to));
 	}
+	
+	printf("the cost of the model %f\n",cost(m,ti,to));
+
 	//Mat_SHOW(grad.w1);
 	//Mat_SHOW(grad.b1);
 	//Mat_SHOW(grad.w2);
 	//Mat_SHOW(grad.b2);
-	return 0;
+	
+    for(size_t i = 0; i < 4 ; i++){
+
+		Mat x = Mat_row(ti,i);
+		Mat_copy(m.a0,x);
+		feedforward(m);
+        float y = *m.a2.ptr;
+        printf("%f op %f => %f\n",train[i*3+0],train[i*3+1],y);
+    }
+
+    return 0;
 }
