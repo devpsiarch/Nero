@@ -1,6 +1,7 @@
 //TODO : Mat/NN_Model check status for debuggin 
 //TODO : more activation functions
 //TODO : maybe its a good idea to get the ti and to in the model aswell
+//TODO : model free
 //the header part 
 #ifndef NERO_H
 #define NERO_H
@@ -48,12 +49,14 @@ typedef struct {
 }NN_Model;
 
 NN_Model NN_ALLOC(size_t *network,size_t network_size);
+void NN_FREE(NN_Model model);
 void NN_print(NN_Model model,const char *name);
 void NN_rand(NN_Model model,size_t low,size_t high);
 void NN_feedforward(NN_Model model);
 float NN_cost(NN_Model model,Mat ti,Mat to,size_t data_size);
 void NN_finit_diff(NN_Model model,NN_Model gradient,Mat ti,Mat to,size_t data_size,float eps);
 void NN_gradient_update(NN_Model model,NN_Model gradient,float rate);
+void NN_check(NN_Model model,Mat ti,size_t data_size);
 
 Mat Mat_alloc(size_t rows,size_t cols);
 Mat Mat_cut(float data[],size_t rows,size_t cols,size_t stride,size_t offset);
@@ -108,6 +111,14 @@ NN_Model NN_ALLOC(size_t *network,size_t network_size){
 	return model;
 }
 
+void NN_FREE(NN_Model model){
+	for(size_t i = 0 ; i < model.layers ; i++){
+		Mat_free(model.wi[i]);
+		Mat_free(model.bi[i]);
+		Mat_free(model.ai[i]);
+	}	
+}
+
 void NN_print(NN_Model model,const char *name){
 	printf(ANSI_COLOR_CYAN"Model %s = {"ANSI_COLOR_RESET"\n",name);
 	char buffer[256];
@@ -152,22 +163,23 @@ float NN_cost(NN_Model model,Mat ti,Mat to,size_t data_size){
 	//its ok to not check rows cuz they will have the same while compairing ...
 	//i think , i might have to check this if it broke 
 	assert(to.cols == NN_OUTPUT(model).cols);
+	assert(ti.rows == to.rows);
+	Mat diff;
 	float result = 0;
 	//these are the input and the expacted output 
-	Mat x,y;
-	Mat diff = Mat_alloc(to.rows,to.cols);
 	for(size_t i = 0 ; i < data_size ; i++){
-		x  = Mat_row(ti,i);
-		y = Mat_row(to,i);
-	
+		Mat x  = Mat_row(ti,i);
+		Mat y = Mat_row(to,i);
+
 		Mat_copy(NN_INPUT(model),x);
         NN_feedforward(model);
 
-		Mat diff = Mat_alloc(y.rows,y.cols);
+		diff = Mat_alloc(y.rows,y.cols);
 		Mat_sub(diff,y,NN_OUTPUT(model));
 		Mat_sq(diff);
 		result += Mat_sum(diff);	
 	}
+	Mat_free(diff);
 	return (result/data_size);
 }
 
@@ -217,6 +229,21 @@ void NN_gradient_update(NN_Model model,NN_Model gradient,float rate){
 	}
 }
 
+void NN_check(NN_Model model,Mat ti,size_t data_size){
+	assert(ti.cols == NN_INPUT(model).cols);
+	printf("<%d done> -----------------------------\n",0);
+	for(size_t i = 0 ; i < data_size ; i++){
+		Mat x  = Mat_row(ti,i);
+		Mat_copy(NN_INPUT(model),x);
+        
+		NN_feedforward(model);
+		Mat_SHOW(NN_INPUT(model));
+		Mat_SHOW(NN_OUTPUT(model));	
+		printf("<%zu done> -----------------------------\n",i+1);
+	}
+}
+
+
 Mat Mat_alloc(size_t rows,size_t cols){
 	Mat matrix;
 	matrix.rows = rows;
@@ -228,7 +255,8 @@ Mat Mat_alloc(size_t rows,size_t cols){
 }
 
 Mat Mat_cut(float data[],size_t rows,size_t cols,size_t stride,size_t offset){
-    return (Mat) {
+	//TODO : offset is row - 2 
+	return (Mat) {
         .rows = rows,
         .cols = cols,
         .stride = stride,
