@@ -1,7 +1,7 @@
-//TODO : Mat/NN_Model check status for debuggin 
 //TODO : more activation functions
 //TODO : maybe its a good idea to get the ti and to in the model aswell
-//TODO : model free
+//TODO : maybe its also a good idea to make a "Mat_takeownership" like in rust , maybe it will help with the leaks 
+//TODO : provide math notes 
 //the header part 
 #ifndef NERO_H
 #define NERO_H
@@ -50,11 +50,13 @@ typedef struct {
 
 NN_Model NN_ALLOC(size_t *network,size_t network_size);
 void NN_FREE(NN_Model model);
+void NN_clear(NN_Model model);
 void NN_print(NN_Model model,const char *name);
 void NN_rand(NN_Model model,size_t low,size_t high);
 void NN_feedforward(NN_Model model);
 float NN_cost(NN_Model model,Mat ti,Mat to,size_t data_size);
 void NN_finit_diff(NN_Model model,NN_Model gradient,Mat ti,Mat to,size_t data_size,float eps);
+void NN_backprop(NN_Model model,NN_Model gradient,Mat ti, Mat to);
 void NN_gradient_update(NN_Model model,NN_Model gradient,float rate);
 void NN_check(NN_Model model,Mat ti,size_t data_size);
 
@@ -71,6 +73,7 @@ void Mat_sub(Mat dst,Mat a,Mat b);
 void Mat_sig(Mat dst);
 void Mat_sq(Mat dst);
 float Mat_sum(Mat dst);
+void Mat_fill(Mat dst,float val);
 /*=============================*/
       /*Math and rand def*/
 /*=============================*/
@@ -119,6 +122,15 @@ void NN_FREE(NN_Model model){
 	}	
 }
 
+void NN_clear(NN_Model model){
+	for(size_t i = 0 ; i < model.layers ; i++){
+		Mat_fill(model.wi[i],0);
+		Mat_fill(model.bi[i],0);
+		Mat_fill(model.ai[i],0);
+	}
+	Mat_fill(NN_OUTPUT(model),0);
+}
+
 void NN_print(NN_Model model,const char *name){
 	printf(ANSI_COLOR_CYAN"Model %s = {"ANSI_COLOR_RESET"\n",name);
 	char buffer[256];
@@ -164,7 +176,6 @@ float NN_cost(NN_Model model,Mat ti,Mat to,size_t data_size){
 	//i think , i might have to check this if it broke 
 	assert(to.cols == NN_OUTPUT(model).cols);
 	assert(ti.rows == to.rows);
-	Mat diff;
 	float result = 0;
 	//these are the input and the expacted output 
 	for(size_t i = 0 ; i < data_size ; i++){
@@ -174,18 +185,23 @@ float NN_cost(NN_Model model,Mat ti,Mat to,size_t data_size){
 		Mat_copy(NN_INPUT(model),x);
         NN_feedforward(model);
 
-		diff = Mat_alloc(y.rows,y.cols);
+		Mat diff = Mat_alloc(y.rows,y.cols);
 		Mat_sub(diff,y,NN_OUTPUT(model));
 		Mat_sq(diff);
-		result += Mat_sum(diff);	
+		result += Mat_sum(diff);
+		Mat_free(diff);
 	}
-	Mat_free(diff);
+
 	return (result/data_size);
 }
 
 void NN_finit_diff(NN_Model model,NN_Model gradient,Mat ti,Mat to,size_t data_size,float eps){
 	float saved;
 	float c = NN_cost(model,ti,to,data_size);
+	
+	assert(ti.rows == to.rows);
+	assert(to.cols == NN_OUTPUT(model).cols);
+
 	//finite diff for all weights 
 	for(size_t i = 0 ; i < model.layers ; i++){
 		for(size_t j = 0 ; j < model.wi[i].rows; j++){
@@ -209,6 +225,67 @@ void NN_finit_diff(NN_Model model,NN_Model gradient,Mat ti,Mat to,size_t data_si
 		}	
 	}
 }
+
+void NN_backprop(NN_Model model,NN_Model gradient,Mat ti, Mat to){
+	assert(ti.rows == to.rows);
+	assert(to.cols == NN_OUTPUT(model).cols);
+	size_t n = ti.rows;
+	
+	NN_clear(gradient);
+
+	for(size_t i = 0 ; i < n ; i++){
+		Mat_copy(NN_INPUT(model),Mat_row(ti,i));
+		NN_feedforward(model);
+		//we then clear the gradient 
+		
+		for(size_t j = 0 ; j <= gradient.layers ; j++){
+			Mat_fill(gradient.ai[j],0);
+		}
+
+		//poplulate the gradient output matrix
+		//this loop isnt a part of the backpropagration algorithm
+		for(size_t j = 0 ; j < to.cols ; j++){
+			Mat_at(NN_OUTPUT(gradient),0,j) = Mat_at(NN_OUTPUT(model),0,j) - Mat_at(to,i,j);
+		}
+		for(size_t l = model.layers ; l > 0 ; l--){
+			for(size_t j = 0 ; j < model.ai[l].cols ; j++){
+				//j is the weight matrix cols 
+				//k is the weight matrix rows because cols[l-1] == rows[l]
+				//all this from the rule of multipliying the two matrices
+				// a is (a_i^l) and da is the diffrence
+				float a  = Mat_at(     model.ai[l],0,j);
+				float da = Mat_at(  gradient.ai[l],0,j);
+				//we can calculate bi^(l-1) cuz its indipendent of the i sub index
+				Mat_at(gradient.bi[l-1],0,j) += 2*da*a*(1-a);
+				for(size_t k = 0 ; k < model.ai[l-1].cols ; k++){
+					//prev_act is (a_i^(l-1))
+					float prev_act = Mat_at(model.ai[l-1],0,k);
+					//w is the prev weight 
+					float w = Mat_at(model.wi[l-1],k,j); 	
+					
+					Mat_at(gradient.wi[l-1],k,j) += 2*a*da*(1-a)*prev_act;
+					Mat_at(gradient.ai[l-1],0,k) += 2*a*da*(1-a)*w;
+				}
+			}
+		}
+	}
+	//now we divide all the results we got by n cuz its an avrage sum
+	for(size_t i = 0 ; i < gradient.layers ; i++){
+
+		for(size_t j = 0 ; j < gradient.wi[i].rows ; j++){
+			for(size_t k = 0 ; k < gradient.wi[i].cols ; k++){
+				Mat_at(gradient.wi[i],j,k) /= n;
+			}
+		}
+		for(size_t j = 0 ; j < gradient.bi[i].rows ; j++){
+			for(size_t k = 0 ; k < gradient.bi[i].cols ; k++){
+				Mat_at(gradient.bi[i],j,k) /= n;
+			}
+		}
+	}
+} 
+
+
 
 void NN_gradient_update(NN_Model model,NN_Model gradient,float rate){
 	//updating the weights and biases using gradint decent
@@ -372,6 +449,14 @@ float Mat_sum(Mat dst){
 		}
 	}
 	return result;
+}
+
+void Mat_fill(Mat dst,float val){
+	for(size_t i = 0 ; i < dst.rows ; i ++){
+		for(size_t j = 0 ; j < dst.cols ; j++){
+			Mat_at(dst,i,j) = val;
+		}
+	}
 }
 
 /*=============================*/
