@@ -5,3 +5,4 @@
 #clang -Wall -Wextra -lm XIM.c -o xim
 
 clang -Wall -Wextra -lm nn.c -o nn
+

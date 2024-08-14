@@ -3,36 +3,42 @@
 //XOR in the framework
 #include "inc/Nero.h"
 
-
-#define train_size(train,stride) sizeof((train))/sizeof((train[0]))/(stride)
-
-#define last_element(array) (array)[array_len((array))-1]
-
 float train[] = {
-	0, 0   ,0,0,   0,0,
-	1, 0   ,1,0,   0,0,
-	0, 1   ,1,0,   1,1,  
-	1, 1   ,1,0,   0,1, 
-
+	0, 0   ,0,0,   0,0,0,
+	0, 0   ,0,1,   0,1,0,
+	0, 0   ,1,0,   1,0,0,
+	0, 0   ,1,1,   1,1,0, 
+	0, 1   ,0,0,   0,1,0,
+	0, 1   ,0,1,   1,0,0,
+	0, 1   ,1,0,   1,1,0,
+	0, 1   ,1,1,   0,0,1, 
+	1, 0   ,0,0,   1,0,0,
+	1, 0   ,0,1,   1,1,0, 
+	1, 0   ,1,0,   0,0,1, 
+	1, 0   ,1,1,   0,0,1,
+	1, 1   ,0,0,   0,0,1, 
+	1, 1   ,0,1,   0,0,1, 
+	1, 1   ,1,0,   0,0,1,
+	1, 1   ,1,1,   0,0,1, 
 };
 
 
 int main(void){
 	srand(69);
 
-    size_t arch[] = {4,2,3,3,2};
+    size_t arch[] = {4,5,3};
     
     NN_Model model    = NN_ALLOC(arch,array_len(arch));
     NN_Model gradient = NN_ALLOC(arch,array_len(arch));
     NN_rand(model,0,1);
 
 
-	size_t stride = 6;
+	size_t stride = 7;
 	size_t n = train_size(train,stride);
     
     //preps the tito
 	Mat ti = Mat_cut(train,n,arch[0],stride,0);
-	Mat to = Mat_cut(train,n,last_element(arch),stride,stride-last_element(arch));	
+	Mat to = Mat_cut(train,n,last_element(arch),stride,to_get_offset(stride,last_element(arch)));	
 
 
     Mat_SHOW(ti);
@@ -53,13 +59,13 @@ int main(void){
 */
     printf("%f \n",NN_cost(model,ti,to,n));
         
-    for(size_t i = 0 ; i < 1000*1000 ; i++){
+    for(size_t i = 0 ; i < 10*5000 ; i++){
         //NN_finit_diff(model,gradient,ti,to,n,1);
         NN_backprop(model,gradient,ti,to);
         NN_gradient_update(model,gradient,1);
-        //printf("cost : %f \n",NN_cost(model,ti,to,n));
+        printf("%zu | cost : %f \n",i,NN_cost(model,ti,to,n));
     }
-    NN_print(gradient,"gradient");
+    NN_print(gradient,"gradient after trainig process");
     
     printf("terminal cost is : %f \n",NN_cost(model,ti,to,n));
 

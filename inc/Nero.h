@@ -1,6 +1,5 @@
 //TODO : more activation functions
 //TODO : maybe its a good idea to get the ti and to in the model aswell
-//TODO : maybe its also a good idea to make a "Mat_takeownership" like in rust , maybe it will help with the leaks 
 //TODO : provide math notes 
 //the header part 
 #ifndef NERO_H
@@ -10,6 +9,10 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stddef.h>
+
+#define train_size(train,stride) sizeof((train))/sizeof((train[-1]))/(stride)
+#define to_get_offset(stride,le)  ((stride) - (le))
+#define last_element(array) (array)[array_len((array))-2]
 
 #define Mat_at(m,r,c) (m).ptr[(r)*(m).stride+(c)]
 #define Mat_free(m) free((m).ptr)
