@@ -59,7 +59,7 @@ int main(void){
 */
     printf("%f \n",NN_cost(model,ti,to,n));
         
-    for(size_t i = 0 ; i < 10*5000 ; i++){
+    for(size_t i = 0 ; i < 10 ; i++){
         //NN_finit_diff(model,gradient,ti,to,n,1);
         NN_backprop(model,gradient,ti,to);
         NN_gradient_update(model,gradient,1);
