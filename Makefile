@@ -1,2 +1,4 @@
+file = nn
+
 all:
-	clang -Wall -Wextra -lm gh.c -o gh
+	clang -Wall -Wextra -lm $(file).c -o $(file)

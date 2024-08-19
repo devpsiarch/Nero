@@ -83,6 +83,7 @@ void Mat_fill(Mat dst,float val);
 
 float randf();
 float sigmoidf(float x);
+float Relu(float x);
 int randi();
 void Mat_rand(Mat m,float low,float max);
 
@@ -479,5 +480,10 @@ int randi(){
 float sigmoidf(float x){
 	return 1.f / (1.f + expf(-x));
 }
-
+float Relu(float x){
+	if(x < 0){
+		return 0;
+	}
+	return x;
+}
 #endif //NERO_IMPLI
