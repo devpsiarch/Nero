@@ -12,7 +12,7 @@
 
 #define train_size(train,stride) sizeof((train))/sizeof((train[-1]))/(stride)
 #define to_get_offset(stride,le)  ((stride) - (le))
-#define last_element(array) (array)[array_len((array))-2]
+#define last_element(array) (array)[array_len((array))-1]
 
 #define Mat_at(m,r,c) (m).ptr[(r)*(m).stride+(c)]
 #define Mat_free(m) free((m).ptr)

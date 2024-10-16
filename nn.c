@@ -1,32 +1,36 @@
 //TODO => cost -> sum matrix 
+//TODO ==> maybe we can group the gradient and the model into one datastruct ? 
+//TODO ==> we gotta make a methode of parsing "collecting" any data and orginizing it into a scheme the API can handel ...
+//"1D array" , Or maybe there exists external libraries ...
+//TODO ==> Maybe we can group the "arch" and the stride into one datastruct so it can be less annoying  
+//TODO ==> maybe we can abstract the API even more ???? 
 
-//XOR in the framework
 #include "inc/Nero.h"
-
+// This nerual network is basically ADDER cercuit !!!
 float train[] = {
-	0, 0   ,0,0,   0,0,0,
-	0, 0   ,0,1,   0,1,0,
-	0, 0   ,1,0,   1,0,0,
-	0, 0   ,1,1,   1,1,0, 
-	0, 1   ,0,0,   0,1,0,
-	0, 1   ,0,1,   1,0,0,
-	0, 1   ,1,0,   1,1,0,
-	0, 1   ,1,1,   0,0,1, 
-	1, 0   ,0,0,   1,0,0,
-	1, 0   ,0,1,   1,1,0, 
-	1, 0   ,1,0,   0,0,1, 
-	1, 0   ,1,1,   0,0,1,
-	1, 1   ,0,0,   0,0,1, 
-	1, 1   ,0,1,   0,0,1, 
-	1, 1   ,1,0,   0,0,1,
-	1, 1   ,1,1,   0,0,1, 
+    0, 0, 0, 0,   0, 0, 0,  // Sum = 0 (000)
+    0, 0, 0, 1,   0, 0, 1,  // Sum = 1 (001)
+    0, 0, 1, 0,   0, 1, 0,  // Sum = 1 (001)
+    0, 0, 1, 1,   0, 1, 1,  // Sum = 2 (010)
+    0, 1, 0, 0,   0, 0, 1,  // Sum = 1 (001)
+    0, 1, 0, 1,   0, 1, 0,  // Sum = 2 (010)
+    0, 1, 1, 0,   0, 1, 1,  // Sum = 2 (010)
+    0, 1, 1, 1,   1, 0, 0,  // Sum = 3 (011)
+    1, 0, 0, 0,   0, 1, 0,  // Sum = 1 (001)
+    1, 0, 0, 1,   1, 1, 0,  // Sum = 2 (010)
+    1, 0, 1, 0,   0, 0, 1,  // Sum = 2 (010)
+    1, 0, 1, 1,   0, 0, 1,  // Sum = 3 (011)
+    1, 1, 0, 0,   0, 0, 1,  // Sum = 2 (010)
+    1, 1, 0, 1,   0, 0, 1,  // Sum = 3 (011)
+    1, 1, 1, 0,   0, 0, 1,  // Sum = 3 (011)
+    1, 1, 1, 1,   1, 1, 0,  // Sum = 4 (100)
 };
 
 
 int main(void){
 	srand(69);
 
-    size_t arch[] = {4,5,3};
+    size_t arch[] = {4,4,4,3};
     
     NN_Model model    = NN_ALLOC(arch,array_len(arch));
     NN_Model gradient = NN_ALLOC(arch,array_len(arch));
@@ -36,14 +40,16 @@ int main(void){
 	size_t stride = 7;
 	size_t n = train_size(train,stride);
     
-    //preps the tito
-	Mat ti = Mat_cut(train,n,arch[0],stride,0);
+    //Creating and the input and output matrix by using the descpription of "arch" and the stride 
+    Mat ti = Mat_cut(train,n,arch[0],stride,0);
 	Mat to = Mat_cut(train,n,last_element(arch),stride,to_get_offset(stride,last_element(arch)));	
 
 
     Mat_SHOW(ti);
     Mat_SHOW(to);
 
+    Mat_STAT(ti);
+    Mat_STAT(to);
 
 /*
     Mat row;
@@ -59,7 +65,7 @@ int main(void){
 */
     printf("%f \n",NN_cost(model,ti,to,n));
         
-    for(size_t i = 0 ; i < 10 ; i++){
+    for(size_t i = 0 ; i < 10000 ; i++){
         //NN_finit_diff(model,gradient,ti,to,n,1);
         NN_backprop(model,gradient,ti,to);
         NN_gradient_update(model,gradient,1);
@@ -72,7 +78,9 @@ int main(void){
     printf("checking ...\n");
 
     NN_check(model,ti,n);
-
+    
+    Mat_free(to);
+    Mat_free(ti);
     NN_FREE(model);
     NN_FREE(gradient);
     
