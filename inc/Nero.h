@@ -10,7 +10,7 @@
 #include <assert.h>
 #include <stddef.h>
 
-#define train_size(train,stride) sizeof((train))/sizeof((train[-1]))/(stride)
+#define train_rows(train,stride) sizeof((train))/sizeof((train[0]))/(stride)
 #define to_get_offset(stride,le)  ((stride) - (le))
 #define last_element(array) (array)[array_len((array))-1]
 

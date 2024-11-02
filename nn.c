@@ -7,7 +7,8 @@
 
 #include "inc/Nero.h"
 // This nerual network is basically ADDER cercuit !!!
-float train[] = {
+
+float raw_train[] = {
     0, 0, 0, 0,   0, 0, 0,  // Sum = 0 (000)
     0, 0, 0, 1,   0, 0, 1,  // Sum = 1 (001)
     0, 0, 1, 0,   0, 1, 0,  // Sum = 1 (001)
@@ -26,20 +27,30 @@ float train[] = {
     1, 1, 1, 1,   1, 1, 0,  // Sum = 4 (100)
 };
 
+void copy(float* data,float train[],size_t size){
+    for(size_t i = 0 ; i < size ;i++){
+        data[i] = train[i]; 
+    }
+}
+
 
 int main(void){
 	srand(69);
 
-    size_t arch[] = {4,4,4,3};
+    size_t arch[] = {4,10,10,3};
     
     NN_Model model    = NN_ALLOC(arch,array_len(arch));
     NN_Model gradient = NN_ALLOC(arch,array_len(arch));
     NN_rand(model,0,1);
 
 
+    //n represents the training sets rows and 
+    // stride is the datas reach or master cols in a sense
 	size_t stride = 7;
-	size_t n = train_size(train,stride);
-    
+	size_t n = train_rows(raw_train,stride);
+    float *train = (float*)malloc(sizeof(float)*n*stride);
+    copy(train,raw_train,n*stride);
+
     //Creating and the input and output matrix by using the descpription of "arch" and the stride 
     Mat ti = Mat_cut(train,n,arch[0],stride,0);
 	Mat to = Mat_cut(train,n,last_element(arch),stride,to_get_offset(stride,last_element(arch)));	
@@ -50,6 +61,7 @@ int main(void){
 
     Mat_STAT(ti);
     Mat_STAT(to);
+
 
 /*
     Mat row;
@@ -79,8 +91,6 @@ int main(void){
 
     NN_check(model,ti,n);
     
-    Mat_free(to);
-    Mat_free(ti);
     NN_FREE(model);
     NN_FREE(gradient);
     
