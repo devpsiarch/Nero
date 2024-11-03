@@ -21,7 +21,7 @@ int main(void){
     NN_Model model = NN_ALLOC(arch,array_len(arch));
     NN_Model gradi = NN_ALLOC(arch,array_len(arch));
     //get the rand model 
-    NN_rand(model,-1,1);
+    NN_rand(model,0,1e-20);
     //describing the input data
 
     Mat ti = {
@@ -31,7 +31,6 @@ int main(void){
         .ptr = &train_image[0][0],
     };
 
-    Mat_STAT(ti);
 
     //prepss the output matrix of the model
     for(size_t i = 0 ; i < 60000 ; i++){
@@ -39,6 +38,7 @@ int main(void){
         train_label_prep[i][temp] = 1.f;
     } 
 
+    // 100% is ready and correct
     Mat to = {
         .rows = 60000,
         .cols = 10,
@@ -46,14 +46,14 @@ int main(void){
         .ptr = &train_label_prep[0][0],
     };
 
-    Mat_STAT(to);
-    printf("%f \n",NN_cost(model,ti,to,60));
-    /*for(size_t i = 0 ; i < 10 ; i++){
+    printf("cost = %f \n",NN_cost(model,ti,to,60000));
+    for(size_t i = 0 ; i < 2 ; i++){
         //NN_finit_diff(model,gradient,ti,to,n,1);
         NN_backprop(model,gradi,ti,to);
-        NN_gradient_update(model,gradi,1);
+        NN_gradient_update(model,gradi,1e-3);
         printf("%zu | cost : %f \n",i,NN_cost(model,ti,to,60000));
-    }*/
-
+    }
+  
+    NN_print(model,"degitrec");
     return 0;
 }

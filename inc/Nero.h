@@ -55,7 +55,7 @@ NN_Model NN_ALLOC(size_t *network,size_t network_size);
 void NN_FREE(NN_Model model);
 void NN_clear(NN_Model model);
 void NN_print(NN_Model model,const char *name);
-void NN_rand(NN_Model model,size_t low,size_t high);
+void NN_rand(NN_Model model,float low,float high);
 void NN_feedforward(NN_Model model);
 float NN_cost(NN_Model model,Mat ti,Mat to,size_t data_size);
 void NN_finit_diff(NN_Model model,NN_Model gradient,Mat ti,Mat to,size_t data_size,float eps);
@@ -158,11 +158,12 @@ void NN_print(NN_Model model,const char *name){
 	printf(ANSI_COLOR_CYAN"}"ANSI_COLOR_RESET"\n");
 }
 
-void NN_rand(NN_Model model,size_t low,size_t high){
-	for(size_t i = 0 ; i < model.layers ; i++){
+void NN_rand(NN_Model model,float low,float high){
+    for(size_t i = 0 ; i < model.layers ; i++){
 		Mat_rand(model.wi[i],low,high);	
 		Mat_rand(model.bi[i],low,high);
-	}
+    }
+    
 }
 
 void NN_feedforward(NN_Model model){
@@ -183,7 +184,7 @@ float NN_cost(NN_Model model,Mat ti,Mat to,size_t data_size){
 	float result = 0;
 	//these are the input and the expacted output 
 	for(size_t i = 0 ; i < data_size ; i++){
-		Mat x  = Mat_row(ti,i);
+        Mat x  = Mat_row(ti,i);
 		Mat y = Mat_row(to,i);
 
 		Mat_copy(NN_INPUT(model),x);
@@ -191,7 +192,7 @@ float NN_cost(NN_Model model,Mat ti,Mat to,size_t data_size){
 
 		Mat diff = Mat_alloc(y.rows,y.cols);
 		Mat_sub(diff,y,NN_OUTPUT(model));
-		Mat_sq(diff);
+        Mat_sq(diff);
 		result += Mat_sum(diff);
 		Mat_free(diff);
 	}
