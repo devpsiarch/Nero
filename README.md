@@ -2,9 +2,9 @@
 ## NERO 
 Nero is a neural network framework written from scratch in pure C i with help GREAT from mister @Tsoding on Youtube !!!
 ## test on MNIST dataset
-tried running it ... am pretty sure it works however my machine is soo bad so in the matter of 5 min i got this
+tried running it ... am pretty sure it works however my machine is soo bad so in the matter of 5 min i got this:
 
-![alt text](https://github.com/devspiarch/Nero/blob/main/resources/degit.PNG?raw=true)
+![degit](resources/degit.PNG)
 
 i guess thats progress ? am sure a good machines from your end and more ompimizations from mine will speed this up.
 ## Goal ?
