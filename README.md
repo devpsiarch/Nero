@@ -13,6 +13,12 @@ tried running it ... am pretty sure it works however my machine is soo bad so in
 
 ![degit](resources/degit.PNG)
 i guess thats progress ? am sure a good machines from your end and more optimizations from mine will speed this up.
+
+## Cancer detection
+well am loosing my faith in this framework , seriously why is the cost stagering ? i checked like a million times ... 
+![cancer_det](./resources/cancer_det.PNG)
+maybe the dataset is busted ?
+
 ## Goal ?
 The goal from this framework is to understand how neural network and AI work by writting your an implimentation from scratch and tinker around trying to wrape your mind around how big frameworks are made , so that when you are using them you get an deeper understanding of how they work under the hood ... and also its very cool to brag about writting your machine learing models in C.
 ## Using ?  
