@@ -35,33 +35,50 @@ void copy(float* data,float train[],size_t size){
 
 
 int main(void){
-	srand(69);
-
-    size_t arch[] = {4,10,10,3};
+  	srand(69);
     
+    size_t arch[] = {6,5,4,3};
     NN_Model model    = NN_ALLOC(arch,array_len(arch));
     NN_Model gradient = NN_ALLOC(arch,array_len(arch));
     NN_rand(model,0,1);
-
-
     //n represents the training sets rows and 
     // stride is the datas reach or master cols in a sense
-	size_t stride = 7;
-	size_t n = train_rows(raw_train,stride);
+    size_t stride = 7;
+	  size_t n = train_rows(raw_train,stride);
     float *train = (float*)malloc(sizeof(float)*n*stride);
     copy(train,raw_train,n*stride);
 
     //Creating and the input and output matrix by using the descpription of "arch" and the stride 
     Mat ti = Mat_cut(train,n,arch[0],stride,0);
-	Mat to = Mat_cut(train,n,last_element(arch),stride,to_get_offset(stride,last_element(arch)));	
+	  Mat to = Mat_cut(train,n,last_element(arch),stride,to_get_offset(stride,last_element(arch)));	
 
+    
+    InitWindow(WIDTH,HIGHT, "NERO");
 
+        while (!WindowShouldClose())
+        {
+            BeginDrawing();
+                ClearBackground(RAYWHITE);
+                    draw_model(model); 
+                    //for(size_t i = 0 ; i < 100 ; i++){
+                        //NN_finit_diff(model,gradient,ti,to,n,1);
+                        NN_backprop(model,gradient,ti,to);
+                        NN_gradient_update(model,gradient,1);
+                        //printf("%zu | cost : %f \n",i,NN_cost(model,ti,to,n));
+                    //}
+
+            EndDrawing();
+        }
+
+    CloseWindow();
+    printf("Terminal | cost : %f \n",NN_cost(model,ti,to,n));
+    /*
     Mat_SHOW(ti);
     Mat_SHOW(to);
 
     Mat_STAT(ti);
     Mat_STAT(to);
-
+    */
 
 /*
     Mat row;
@@ -75,21 +92,17 @@ int main(void){
 
     }
 */
-    printf("%f \n",NN_cost(model,ti,to,n));
+    //printf("%f \n",NN_cost(model,ti,to,n));
         
-    for(size_t i = 0 ; i < 10000 ; i++){
-        //NN_finit_diff(model,gradient,ti,to,n,1);
-        NN_backprop(model,gradient,ti,to);
-        NN_gradient_update(model,gradient,1);
-        printf("%zu | cost : %f \n",i,NN_cost(model,ti,to,n));
-    }
-    NN_print(gradient,"gradient after trainig process");
+
+    /*NN_print(gradient,"gradient after trainig process");
     
     printf("terminal cost is : %f \n",NN_cost(model,ti,to,n));
 
     printf("checking ...\n");
 
     NN_check(model,ti,n);
+    */
     
     NN_FREE(model);
     NN_FREE(gradient);

@@ -191,10 +191,10 @@ void print_mnist_pixel(float data_image[][SIZE],int label[], int num_data)
 }
 
 void load_mnist(void){
-    labels("../data/train-labels.idx1-ubyte",0);
-    labels("../data/t10k-labels.idx1-ubyte",1);
+    labels("data/train-labels.idx1-ubyte",0);
+    labels("data/t10k-labels.idx1-ubyte",1);
 
-    images("../data/train-images.idx3-ubyte",60000);
-    images("../data/t10k-images.idx3-ubyte",10000);
+    images("data/train-images.idx3-ubyte",60000);
+    images("data/t10k-images.idx3-ubyte",10000);
 }
 
