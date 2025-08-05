@@ -6,6 +6,7 @@
 //TODO ==> maybe we can abstract the API even more ???? 
 
 #include "inc/Nero.h"
+#include "inc/see.h"
 // This nerual network is basically ADDER cercuit !!!
 
 float raw_train[] = {
@@ -37,10 +38,12 @@ void copy(float* data,float train[],size_t size){
 int main(void){
   	srand(69);
     
-    size_t arch[] = {6,5,4,3};
+    size_t arch[] = {6,2,2,3};
     NN_Model model    = NN_ALLOC(arch,array_len(arch));
     NN_Model gradient = NN_ALLOC(arch,array_len(arch));
     NN_rand(model,0,1);
+
+
     //n represents the training sets rows and 
     // stride is the datas reach or master cols in a sense
     size_t stride = 7;
@@ -52,7 +55,8 @@ int main(void){
     Mat ti = Mat_cut(train,n,arch[0],stride,0);
 	  Mat to = Mat_cut(train,n,last_element(arch),stride,to_get_offset(stride,last_element(arch)));	
 
-    
+    Mat_SHOW(ti);
+    Mat_SHOW(to);
     InitWindow(WIDTH,HIGHT, "NERO");
 
         while (!WindowShouldClose())

@@ -40,7 +40,6 @@ typedef struct {
 	size_t cols;
 	size_t stride;
 	float *ptr;
-	//stride later for sub matrices
 }Mat;
 
 
@@ -48,7 +47,7 @@ typedef struct {
 	size_t layers;
 	Mat *wi;
 	Mat *bi;
-	Mat *ai;//the number of activation layer is layers + 1
+	Mat *ai;      //the number of activation layer is layers + 1
 }NN_Model;
 /*=============================*/
        /*Linear algebra*/
@@ -88,22 +87,6 @@ float sigmoidf(float x);
 float Relu(float x);
 int randi();
 void Mat_rand(Mat m,float low,float max);
-/*=============================*/
-    /*visiulizing the model*/
-/*=============================*/
-#include <raylib.h>
-//i dont wanna pass around these values everywhere
-//maybe when i make a better API
-#define WIDTH 1000
-#define HIGHT 700
-#define NEU_SIZE 50
-
-size_t get_cubes(NN_Model model,size_t network_size);
-void draw_neu(int num,int posX);
-void draw_layers(size_t arr[],size_t size);
-
-void draw_mat(Mat m,int posX,int posY);
-void draw_model(NN_Model model);
 
 #endif //NERO_H
 //the C code part 
@@ -505,66 +488,5 @@ float Relu(float x){
 	}
 	return x;
 }
-/*=============================*/
-    /*visiulizing the model*/
-/*=============================*/
-//maybe we can make two ways of visiulizing the learning process
-//the neurons one is waaay to hard so ill try to make it later 
-//on the other hand , the grid way is also promisingly easy ?
-void draw_neu(int num,int posX){
-    //we calc the spacing between n strips of HIGHT length
-    int spc = HIGHT/num; 
-    for(int i = 0 ; i < num ; i++){
-        int tmp = spc/2+i*spc;
-        DrawCircle(posX,tmp,NEU_SIZE,BLACK);
-    }
-}
-void draw_layers(size_t arr[],size_t size){
-    //we save the number of the neurons because we need them to calculate
-    //there locations
-    int spc = WIDTH/size;
-    for(size_t i = 0 ; i < size ; i++){
-        //you will make a loop simulating the other function's call 
-        //then populate the resulting location array
-        draw_neu((int)arr[i],spc/2+i*spc);
-    }
-}
 
-//maybe we can draw them like the neurons just in order 
-//and save the locations after we split the canvas depending on 
-//the the number of cubes , then we need a function that draw 
-//thae the matrix not the model
-size_t get_cubes(NN_Model model,size_t network_size){
-    size_t res = 0;
-    for(size_t i = 1 ; i < network_size ; i++){
-        res += model.wi[i-1].rows*model.wi[i-1].cols;
-        res += model.bi[i-1].rows*model.bi[i-1].cols;
-    }
-    return res;
-}
-void draw_mat(Mat m,int posX,int posY){
-    for(size_t i = 0 ; i < m.rows; i++){
-        for(size_t j = 0 ; j < m.cols ;j++){
-            int x = posX+i*NEU_SIZE;
-            int y = posY+j*NEU_SIZE;
-            
-            float val = Mat_at(m,i,j);
-            Color c = {val*255,0,(1-val)*255,255};
-
-            DrawRectangle(x,y,NEU_SIZE,NEU_SIZE,c);
-        }
-    }
-}
-void draw_model(NN_Model model){
-    int max_cols = 0;
-    for(size_t i = 0 ; i <= model.layers ; i++){
-        //The core idea here is that we save the cols of the 
-        //weights to know how to space the drawings
-        int x = NEU_SIZE*max_cols + NEU_SIZE/2;
-        int y = NEU_SIZE*i+NEU_SIZE/2;
-        draw_mat(model.wi[i],x,y);
-        draw_mat(model.bi[i],x,y+NEU_SIZE*model.wi[i].rows);
-        max_cols = (int)model.wi[i].cols;
-    }
-}
 #endif //NERO_IMPLI
