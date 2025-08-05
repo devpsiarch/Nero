@@ -47,7 +47,7 @@ typedef struct {
 	size_t layers;
 	Mat *wi;
 	Mat *bi;
-	Mat *ai;      //the number of activation layer is layers + 1
+	Mat *ai;//the number of activation layer is layers + 1
 }NN_Model;
 /*=============================*/
        /*Linear algebra*/
@@ -120,11 +120,16 @@ NN_Model NN_ALLOC(size_t *network,size_t network_size){
 }
 
 void NN_FREE(NN_Model model){
-	for(size_t i = 0 ; i < model.layers ; i++){
+	size_t i;
+  for(i = 0 ; i < model.layers ; i++){
 		Mat_free(model.wi[i]);
 		Mat_free(model.bi[i]);
 		Mat_free(model.ai[i]);
-	}	
+	}
+		Mat_free(model.ai[i]);
+    free(model.wi);
+    free(model.bi);
+    free(model.ai);
 }
 
 void NN_clear(NN_Model model){

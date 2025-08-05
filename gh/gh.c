@@ -31,7 +31,7 @@ int main(){
     Mat_STAT(ti);
     Mat_STAT(to);
 
-        for(size_t i = 0 ; i < 1000 ; i++){
+        for(size_t i = 0 ; i < 10 ; i++){
             NN_backprop(model,gradient,ti,to);
             NN_gradient_update(model,gradient,0.5);
             printf("%zu | cost : %f \n",i,NN_cost(model,ti,to,n));
@@ -40,8 +40,6 @@ int main(){
 defer_model:
     NN_FREE(model);
     NN_FREE(gradient);
-    Mat_free(ti);
-    Mat_free(to);
 defer_main:
     free(data);
     return 0;
