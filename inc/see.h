@@ -7,9 +7,12 @@
 #include <raylib.h>
 //i dont wanna pass around these values everywhere
 //maybe when i make a better API
+// the values here are only used by the cube displayer
 #define WIDTH 1000
 #define HIGHT 700
 #define NEU_SIZE 50
+
+#define PICK_COLOR(value) {100,(1-(val))*255,(val)*255,255}
 
 /* Intermediate representation for the location of nodes */
 typedef struct {
@@ -116,17 +119,17 @@ void draw_nn(NN_Model m,NN_map* map,size_t arch[],size_t size){
                 DrawCircle(map->dx[i],map->dy[i][j],10,GRAY); 
                 for(size_t k = 0 ; k < arch[i+1] ; k ++){
                     float val = Mat_at(m.wi[i],j,k);
-                    Color c = {val*255,0,(1-val)*255,255};
+                    Color c = PICK_COLOR(val);
                     DrawLine(map->dx[i],map->dy[i][j],map->dx[i+1],map->dy[i+1][k],c);
                 }
             }else{
                 float val = Mat_at(m.bi[i-1],0,j);
-                Color c = {val*255,0,(1-val)*255,255};
+                Color c = PICK_COLOR(val);
                 DrawCircle(map->dx[i],map->dy[i][j],10,c); 
                 if(i != size-1){
                     for(size_t k = 0 ; k < arch[i+1] ; k ++){
                         float val = Mat_at(m.wi[i],j,k);
-                        Color c = {val*255,0,(1-val)*255,255};
+                        Color c = PICK_COLOR(val);
                         DrawLine(map->dx[i],map->dy[i][j],map->dx[i+1],map->dy[i+1][k],c);
                     }
                 }

@@ -7,6 +7,7 @@
 
 #include "inc/Nero.h"
 #include "inc/see.h"
+#include <string.h>
 // This nerual network is basically ADDER cercuit !!!
 
 float raw_train[] = {
@@ -39,9 +40,9 @@ int main(void){
     srand(time(0));
     const int cell_size = 10;
     const int hight = 450;
-    const int width = 800;
+    const int width = 850;
 
-    size_t arch[] = {6,5,10,3};
+    size_t arch[] = {6,15,3};
     NN_Model model    = NN_ALLOC(arch,array_len(arch));
     NN_Model gradient = NN_ALLOC(arch,array_len(arch));
     NN_rand(model,0,1);
@@ -58,7 +59,7 @@ int main(void){
 
     // pre visulizer
     NN_map* map =  init_nnmap(arch,array_len(arch),width,hight);
-
+    
     InitWindow(width,hight, "Brain show me");
     while (!WindowShouldClose()){
         BeginDrawing();
@@ -66,12 +67,13 @@ int main(void){
             NN_backprop(model,gradient,ti,to);
             NN_gradient_update(model,gradient,0.1);    
             draw_nn(model,map,arch,array_len(arch));
+            const char* cost_msg = TextFormat("cost:%f",NN_cost(model,ti,to,n));
+            DrawText(cost_msg,width-strlen(cost_msg)*10,5,19,GREEN);
+
         EndDrawing();
     }
-
     CloseWindow();
     printf("Terminal | cost : %f \n",NN_cost(model,ti,to,n));
-    NN_print(model,"adder"); 
 defer:
     NN_FREE(model);
     NN_FREE(gradient);

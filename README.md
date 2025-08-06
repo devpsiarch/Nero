@@ -1,6 +1,7 @@
 # Nero: Neural network header only library 
 ![vis](./resources/vis.png)
 ![vis2](./resources/vis2.png)
+![vis3](./resources/vis3.png)
 
 Nero is a header only library that provides machine learning algorithms written in pure C.
 
