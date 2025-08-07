@@ -1,8 +1,9 @@
-file = main
+file = degitrec/degit.c
+bin = bin/degit
 
 build:
-	gcc -O3 -fsanitize=address -g -Wall -Wextra -lm -lraylib $(file).c -o bin/$(file)
+	gcc -O3 -fsanitize=address -g -Wall -Wextra -lm -lraylib $(file) -o $(bin)
 run:build
-	./bin/$(file)
+	./$(bin)
 clean:
 	rm bin/*

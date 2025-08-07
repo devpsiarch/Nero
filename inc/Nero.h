@@ -24,6 +24,12 @@
 #define NN_INPUT(model) (model).ai[0]
 #define NN_OUTPUT(model) (model).ai[(model).layers]
 
+#define NN_PREDICT(x,model)       \
+do {                              \
+    Mat_copy(NN_INPUT(model),(x));\
+    NN_feedforward(model);        \
+} while(0);                       \
+
 
 //colors for beauty 
 #define ANSI_COLOR_RED     "\x1b[31m"
@@ -190,7 +196,7 @@ float NN_cost(NN_Model model,Mat ti,Mat to,size_t data_size){
 	float result = 0;
 	//these are the input and the expacted output 
 	for(size_t i = 0 ; i < data_size ; i++){
-        Mat x  = Mat_row(ti,i);
+    Mat x  = Mat_row(ti,i);
 		Mat y = Mat_row(to,i);
 
 		Mat_copy(NN_INPUT(model),x);
@@ -420,9 +426,9 @@ void Mat_sub(Mat dst,Mat a,Mat b){
 	//assertion of sizes
 	assert(a.cols == b.cols && a.rows == b.rows);
 	assert(dst.rows == a.rows && dst.cols == a.cols);
-	for(size_t i = 0 ; i < a.rows ; i++){
+    for(size_t i = 0 ; i < a.rows ; i++){
 		for(size_t j = 0 ; j < a.cols ; j++){
-			Mat_at(dst,i,j)=Mat_at(a,i,j)-Mat_at(b,i,j);
+       Mat_at(dst,i,j)=Mat_at(a,i,j)-Mat_at(b,i,j);
 		}
 	}
 }

@@ -9,6 +9,7 @@
 #define SIZE 784
 int train_label[NUM_TRAIN];
 int test_label[NUM_TEST];
+
 float train_image[NUM_TRAIN][SIZE];
 float test_image[NUM_TEST][SIZE];
 
@@ -21,12 +22,13 @@ float test_image[NUM_TEST][SIZE];
 #define MAP_MNIST(i) (i)
 #endif
 
+// some id/magic numbers
 #define IMAGES_MNIST 2051 // According to Mnist
 #define LABELS_MNIST 2049 // According to Mnist
 
 
 
-// struct
+// struct (wow amazing comments old me)
 struct ExpectedHeaderStr
 {
     uint32_t type; // magic number : need to be 2049
@@ -122,7 +124,7 @@ void images(const char *path,size_t space)
     size_t sizeValue = imageHeader.height * imageHeader.width;
     if (size != space /*check the size of labels*/)
     {
-        fprintf(stderr, "Number of images does not match number of labels (%u != %u)\n", size, 0 /*check the siwe of labels*/);
+        fprintf(stderr, "Number of images does not match number of labels (%zu != %u)\n", size, 0 /*check the siwe of labels*/);
         exit(EXIT_FAILURE);
     }
 
@@ -156,7 +158,7 @@ void images(const char *path,size_t space)
                 {
                     train_image[i][j] = value[i][j];
                 }
-                
+                free(value[i]);                    
             } 
         }else if (space == NUM_TEST)
         {
@@ -165,8 +167,9 @@ void images(const char *path,size_t space)
                 for (size_t j = 0; j < 784; j++)
                 {
                     test_image[i][j] = value[i][j];
+                   
                 }
-                
+                free(value[i]);                    
             }
         }
         // value should be yours images
@@ -191,10 +194,10 @@ void print_mnist_pixel(float data_image[][SIZE],int label[], int num_data)
 }
 
 void load_mnist(void){
-    labels("data/train-labels.idx1-ubyte",0);
-    labels("data/t10k-labels.idx1-ubyte",1);
+    labels("degitrec/data/train-labels.idx1-ubyte",0);
+    labels("degitrec/data/t10k-labels.idx1-ubyte",1);
 
-    images("data/train-images.idx3-ubyte",60000);
-    images("data/t10k-images.idx3-ubyte",10000);
+    images("degitrec/data/train-images.idx3-ubyte",60000);
+    images("degitrec/data/t10k-images.idx3-ubyte",10000);
 }
 
