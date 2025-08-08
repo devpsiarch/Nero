@@ -1,14 +1,16 @@
-# Nero: Neural network header only library 
-![vis](./resources/vis.png)
-![vis2](./resources/vis2.png)
+# Nero: Neural network header only library
+
+![vis](./resources/vis.png)  
+![vis2](./resources/vis2.png)  
 ![vis3](./resources/vis3.png)
 
 Nero is a header only library that provides machine learning algorithms written in pure C.
 
----
+----------
 
-# How to use 
-You can follow the bellow template for starting the learning procces : 
+# How to use
+
+You can follow the below template for starting the learning process:
 
 ```c
 #include "../inc/Nero.h"
@@ -28,7 +30,7 @@ int main(){
                                ,cat_attributes
                                ,replacement_values);
 
-     
+
     srand(69);
     // define the form/architecture of the NN (layers and all)
     size_t arch[] = {10,5,1};
@@ -37,17 +39,17 @@ int main(){
     NN_rand(model,0,1);
 
     size_t stride = 11;
-	size_t n = lines_read;
+        size_t n = lines_read;
 
     // cut a portion of the raw data to a matrix representation
     Mat ti = Mat_cut(data,n,arch[0],stride,0);
-    Mat to = Mat_cut(data,n,last_element(arch),stride,to_get_offset(stride,last_element(arch)));	
+    Mat to = Mat_cut(data,n,last_element(arch),stride,to_get_offset(stride,last_element(arch)));
 
     // Showing info abt matrix (row*col)
     Mat_STAT(ti);
     Mat_STAT(to);
 
-        // learning proccess
+        // learning process
         for(size_t i = 0 ; i < 1000 ; i++){
             NN_backprop(model,gradient,ti,to);
             NN_gradient_update(model,gradient,0.5);
@@ -64,13 +66,15 @@ defer_main:
     free(data);
     return 0;
 }
+
 ```
 
-here is also an Example of how to use the visualization:
+Here is also an example of how to use the visualization:
+
 ```c
 #include "inc/Nero.h"
 #include "inc/see.h"
-// This nerual network is basically ADDER cercuit !!!
+// This neural network is basically ADDER circuit !!!
 
 float raw_train[] = {
     0, 0, 0, 0,   0, 0, 0,  // Sum = 0 (000)
@@ -93,7 +97,7 @@ float raw_train[] = {
 
 void copy(float* data,float train[],size_t size){
     for(size_t i = 0 ; i < size ;i++){
-        data[i] = train[i]; 
+        data[i] = train[i];
     }
 }
 
@@ -101,40 +105,40 @@ void copy(float* data,float train[],size_t size){
 int main(void){
     srand(time(0));
     const int cell_size = 10;
-    const int hight = 450;
+    const int height = 450;
     const int width = 800;
 
     size_t arch[] = {6,5,10,3};
     NN_Model model    = NN_ALLOC(arch,array_len(arch));
     NN_Model gradient = NN_ALLOC(arch,array_len(arch));
     NN_rand(model,0,1);
-    
+
     size_t stride = 7;
-	  size_t n = train_rows(raw_train,stride);
-    
+          size_t n = train_rows(raw_train,stride);
+
     // prep a raw pointer for the data ... ik amazing api
     float *train = (float*)malloc(sizeof(float)*n*stride);
-    copy(train,raw_train,n*stride);  
+    copy(train,raw_train,n*stride);
 
     Mat ti = Mat_cut(train,n,arch[0],stride,0);
-	  Mat to = Mat_cut(train,n,last_element(arch),stride,to_get_offset(stride,last_element(arch)));	
+          Mat to = Mat_cut(train,n,last_element(arch),stride,to_get_offset(stride,last_element(arch)));
 
-    // pre visulizer
-    NN_map* map =  init_nnmap(arch,array_len(arch),width,hight);
+    // pre visualizer
+    NN_map* map =  init_nnmap(arch,array_len(arch),width,height);
 
-    InitWindow(width,hight, "Brain show me");
+    InitWindow(width,height, "Brain show me");
     while (!WindowShouldClose()){
         BeginDrawing();
             ClearBackground(BLACK);
             NN_backprop(model,gradient,ti,to);
-            NN_gradient_update(model,gradient,0.1);    
+            NN_gradient_update(model,gradient,0.1);
             draw_nn(model,map,arch,array_len(arch));
         EndDrawing();
     }
 
     CloseWindow();
     printf("Terminal | cost : %f \n",NN_cost(model,ti,to,n));
-    NN_print(model,"adder"); 
+    NN_print(model,"adder");
 defer:
     NN_FREE(model);
     NN_FREE(gradient);
@@ -142,29 +146,56 @@ defer:
     kill_nnmap(map);
     return 0;
 }
+
 ```
 
----
-# Limitations 
-For now the Nero.h provides only the `sigmoid` activation function and its respected `backpopagation` algorithm.
+----------
+
+# Limitations
+
+For now the Nero.h provides only the `sigmoid` activation function and its respective `backpropagation` algorithm.  
 More will be added soon.
 
---- 
+----------
 
-# .nn file format 
-You can find a small explination on how to read the `.nn` file format that saved a `NN_Model` structure and its parameters in the functions that handel such operations in `Nero.h`.
+# Examples
 
---- 
-# Dependencies 
-We depend only on `libc` and `raylib` for visualization , run `get_deps.sh` on Linux.
+## Upscaling MNIST gray scale images
 
----
+You can see the `degitrec/upscale.c` file where I trained a model to **Memorize** a gray scale picture.  We train a model that can predict the value **from 0 to 1** from the picture cords (let them x and y).  
+Then we can linearly scale the dimensions of the picture and the model will fill it in.
+
+![vis4](./resources/upscale.png)
+
+
+You can find the already trained model for this example in `upscaler_5_index_0.nn` where you can load it.
+
+----------
+
+# .nn file format
+
+You can find a small explanation on how to read the `.nn` file format that saved a `NN_Model` structure and its parameters in the functions that handle such operations in `Nero.h`.
+
+----------
+
+# Dependencies
+
+We depend only on `libc` and `raylib` for visualization, run `get_deps.sh` on Linux.
+
+----------
 
 # Goal
-The goal from this framework is to understand how neural network and AI work by writting your an implimentation from scratch and tinker around trying to wrape your mind around how big frameworks are made , so that when you are using them you get an deeper understanding of how they work under the hood .
 
----
-# Future Goals for Nero ? 
-- More flexibility and options
-- Getting a Hardware boost (Using GPUs).
-- Running a language/vision model on it.
+The goal from this framework is to understand how neural networks and AI work by writing your own implementation from scratch and tinkering around trying to wrap your mind around how big frameworks are made, so that when you are using them you get a deeper understanding of how they work under the hood.
+
+----------
+
+# Future Goals for Nero?
+
+-   More flexibility and options
+    
+-   Getting a Hardware boost (Using GPUs)
+    
+-   Running a language/vision model on it
+    
+----------

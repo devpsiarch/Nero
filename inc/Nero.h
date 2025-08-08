@@ -178,6 +178,7 @@ defer:
     return husk;
 }
 void NN_SAVE(NN_Model model,const char* path){
+    printf("Saving model...\n");
     FILE* fp = fopen(path,"wb");
     if(fp == NULL){
         printf("INFO: unable to open file %s\n",path);
@@ -214,7 +215,10 @@ void NN_SAVE(NN_Model model,const char* path){
             goto defer;
         }
     }
+    printf("Success saving model.\n");
+    return;
 defer:
+    printf("failed saving model.\n");
 }
 
 size_t NN_SIZE(const NN_Model model){
