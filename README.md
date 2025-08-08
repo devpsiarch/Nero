@@ -150,6 +150,11 @@ For now the Nero.h provides only the `sigmoid` activation function and its respe
 More will be added soon.
 
 --- 
+
+# .nn file format 
+You can find a small explination on how to read the `.nn` file format that saved a `NN_Model` structure and its parameters in the functions that handel such operations in `Nero.h`.
+
+--- 
 # Dependencies 
 We depend only on `libc` and `raylib` for visualization , run `get_deps.sh` on Linux.
 

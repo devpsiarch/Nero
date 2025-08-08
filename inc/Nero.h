@@ -10,9 +10,13 @@
 #include <assert.h>
 #include <stddef.h>
 #include <unistd.h>
+#include <stdint.h>
 #define train_rows(train,stride) sizeof((train))/sizeof((train[0]))/(stride)
 #define to_get_offset(stride,le)  ((stride) - (le))
 #define last_element(array) (array)[array_len((array))-1]
+
+// we define a number that is the first byte read from a model saved file
+#define NN_MAGIC 101
 
 #define Mat_at(m,r,c) (m).ptr[(r)*(m).stride+(c)]
 #define Mat_free(m) free((m).ptr)
@@ -26,8 +30,8 @@
 
 #define NN_PREDICT(x,model)       \
 do {                              \
-    Mat_copy(NN_INPUT(model),(x));\
-    NN_feedforward(model);        \
+    Mat_copy(NN_INPUT((model)),(x));\
+    NN_feedforward((model));        \
 } while(0);                       \
 
 
@@ -58,6 +62,9 @@ typedef struct {
 /*=============================*/
        /*Linear algebra*/
 /*=============================*/
+NN_Model NN_LOAD(const char* path);
+void NN_SAVE(NN_Model model,const char* path);
+size_t NN_SIZE(NN_Model model);
 NN_Model NN_ALLOC(size_t *network,size_t network_size);
 void NN_FREE(NN_Model model);
 void NN_clear(NN_Model model);
@@ -98,24 +105,146 @@ void Mat_rand(Mat m,float low,float max);
 //the C code part 
 #ifndef NERO_IMPLI
 #define NERO_IMPLI
+/*
+ * Here is a small explination of the format of the data file : 
+ * 1 bytes => reserved for a number which is defined above
+ * 8 bytes ~ 'network_size' => network size of the neural network
+ * 8 * network_size bytes => architecture of the network (number of neurons in each layers)
+ * foreach: i from 1 to networksize:
+ *        sizeof(parameter)*arch[i-1]*arch[i] => weights for (i-1)th layer 'excluding input layer' 
+ *        sizeof(parameter)*arch[i-1] => biases for (i-1)th layer 'excluding input layer' 
+ * where: parameter ~ {float | double } ~ depending on the model
+ */
+NN_Model NN_LOAD(const char* path){
+    // grabage value for failure , sorry for this API
+    NN_Model husk = {
+        .layers = 0,
+        .wi = NULL,
+        .bi = NULL,
+        .ai = NULL
+    };
+    size_t* arch = NULL;
+    FILE* fp = fopen(path,"rb");
+    if(fp == NULL){
+        printf("INDO: counld not read %s file containing model\n",path);
+        goto defer;
+    }
+    // init what we would read from the file
+    uint8_t magic_number;
+    size_t network_size;
+    // reading the identifing magic number
+    if(fread(&magic_number,sizeof(uint8_t),1,fp) == 0){
+        printf("INFO: unable to read magic from %s.\n",path);
+        goto defer;
+    }
+    // check for missmatch
+    if(magic_number != NN_MAGIC){
+        printf("INFO: unable to match read magic number with file standerd.\n");
+        goto defer;
+    }
+    // reading the network_size (layer + 1 for the input layer)
+    if(fread(&network_size,sizeof(size_t),1,fp) == 0){
+        printf("INFO: unable to read number of network_size from %s.\n",path);
+        goto defer;
+    }
+    arch = malloc(sizeof(size_t)*network_size);
+    if(arch == NULL){
+        printf("INFO: unable to allocate memory tf?\n");
+        goto defer;
+    }
+    // reading the arch to the array
+    if(fread(arch,sizeof(size_t),network_size,fp) == 0){
+        printf("INFO: unable to read the architecture of the network from %s\n",path);
+        goto defer;
+    }
+    NN_Model result = NN_ALLOC(arch,network_size);
+    // reading and populating the model parameters
+    for(size_t i = 1 ; i < network_size ; ++i){
+        if(fread(result.wi[i-1].ptr,sizeof(*result.wi->ptr),arch[i-1]*arch[i],fp) == 0){
+            printf("INFO: failed to read weights on layers %zu from %s.\n",i,path);
+            goto defer;
+        }
+        if(fread(result.bi[i-1].ptr,sizeof(*result.bi->ptr),arch[i],fp) == 0){
+            printf("INFO: failed to read biases on layers %zu from %s.\n",i,path);
+            goto defer;
+        }
+    }
+    free(arch);
+    return result;
+defer:
+    if(fp != NULL) fclose(fp);
+    if(arch != NULL) free(arch);
+    if(result.layers+1 == network_size) NN_FREE(result);
+    return husk;
+}
+void NN_SAVE(NN_Model model,const char* path){
+    FILE* fp = fopen(path,"wb");
+    if(fp == NULL){
+        printf("INFO: unable to open file %s\n",path);
+        goto defer;
+    }
+    // write the magic number 
+    uint8_t magic_number = NN_MAGIC;
+    if(fwrite(&magic_number,sizeof(uint8_t),1,fp) == 0){
+        printf("INFO: unable to write the magic number to %s.\n",path);
+        goto defer;
+    }
+    // write the network size (layers + 1 for the input layer)  
+    size_t network_size = model.layers+1;
+    if(fwrite(&network_size,sizeof(size_t),1,fp) == 0){
+        printf("INFO: unable to write the network size %s.\n",path);
+        goto defer;
+    }
+    // write the architecture of the network 
+    for(size_t i = 0 ; i < network_size ;++i){
+        if(fwrite(&model.ai[i].cols,sizeof(size_t),1,fp) == 0){
+            printf("INFO: unable to write the layer architecture %zu to %s.\n",i,path);
+            goto defer;
+        }
+    }
+    // writing the parameters (weights and biases)
+    for(size_t i = 0 ; i < model.layers ; ++i){
+        if(fwrite(model.wi[i].ptr,sizeof(*model.wi->ptr),model.wi[i].rows*model.wi[i].cols,fp) == 0){
+            printf("INFO: unable to write weights of layer %zu to %s.\n",i,path);
+            goto defer;
+        }
+        // we ommit the bi[i].rows beacause it is always 1
+        if(fwrite(model.bi[i].ptr,sizeof(*model.bi->ptr),model.bi[i].cols,fp) == 0){
+            printf("INFO: unable to write biases of layer %zu to %s.\n",i,path);
+            goto defer;
+        }
+    }
+defer:
+}
+
+size_t NN_SIZE(const NN_Model model){
+    size_t result = 0;
+    size_t parameter_size = sizeof(*model.wi->ptr);
+    for(size_t i = 0 ; i < model.layers ; ++i){
+        // we add one to the weight rows because they are the same as the 
+        // biases cols and we reduce the adding 
+        result += (model.bi[i].rows+1)*model.wi[i].cols*parameter_size;
+    }
+    return result;
+}
 
 NN_Model NN_ALLOC(size_t *network,size_t network_size){
 	//allocate enough space for weights and biases
 	assert(network_size > 0);
 	NN_Model model;
 	model.layers = network_size - 1;
-	//allocating for weights	
+	//allocating matrices for weights	
 	model.wi =  malloc(sizeof(*model.wi)*model.layers);
 	assert(model.wi != NULL);
-	//allocating for biases
+	//allocating matricies for biases
 	model.bi =  malloc(sizeof(*model.bi)*model.layers);
 	assert(model.bi != NULL);
-	//allocating for activation layer includeing the input
+	//allocating matricies for activation layer includeing the input
 	model.ai =  malloc(sizeof(*model.ai)*(network_size));
 	assert(model.ai != NULL);
 
 	//{2,2,1}
-	//allocating sizes of matricies
+	//allocating matricies themselves
 	model.ai[0] = Mat_alloc(1,network[0]);
 	for(size_t i = 1 ; i < network_size ; i++){
 		model.wi[i-1] = Mat_alloc(network[i-1],network[i]);
